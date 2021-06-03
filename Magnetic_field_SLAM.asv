@@ -31,7 +31,7 @@ magnitude_scale_SE = 1;
 length_scale_SE = 0.3;
 magnitude_scale_lin = 1;
 
-space_margin = 10.0;
+space_margin = 10.;
 x_u = max(positions(1, :)) + space_margin; % Upper bound of the X-coordinates 
 y_u = max(positions(2, :)) + space_margin; % Upper bound of the Y-coordinates
 z_u = max(positions(3, :)) + space_margin; % Upper bound of the Z-coordinates

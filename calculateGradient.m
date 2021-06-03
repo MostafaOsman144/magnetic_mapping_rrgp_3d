@@ -9,6 +9,9 @@ d = length(position);
 grad_of_position = eye(d);
 
 grad = [];
+% TODO: Make this snippet of code use pot-basis_function_row directly to
+% avoid ambiguities in debugging the code due to the difference sizes and
+% the many transposes. 
 for grad_position = 1 : d
     for i = 1 : d
         grad_col = ones(m, 1);

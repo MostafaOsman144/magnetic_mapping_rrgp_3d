@@ -12,8 +12,6 @@ gramMatrix = zeros(n, m);
 
 for i = 1 : n
      gramMatrix(i, :) = squaredExponentialKernel(X(:, i), X_dash, magnitude_scale_SE, length_scale) + linearKernel(X(:, i), X_dash, magnitude_scale_lin); 
-%     gramMatrix(i, :) = linearKernel(X(:, i), X_dash(:, i), magnitude_scale_lin); 
-%     gramMatrix(i, :) = squaredExponentialKernel(X(:, i), X_dash, magnitude_scale_SE, length_scale);
 end
 
 end
