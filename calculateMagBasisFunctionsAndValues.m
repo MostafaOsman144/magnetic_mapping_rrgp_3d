@@ -15,12 +15,12 @@ d = size(positions, 2);
 
 permutation_index = generateIndexMat(m);
 
-mag_basis_functions = [];
+mag_basis_functions = zeros(3*n, d + m);
 % TODO: Try to vectorize this for loop over n to optimize the computation
 % time.
 for i = 1 : n
    mag_basis_function_col = calculateGradient(permutation_index, positions(i, :)', space_upper_boundaries);
-   mag_basis_functions = [mag_basis_functions; mag_basis_function_col];
+   mag_basis_functions(i*3 - 2 : i*3, :) = mag_basis_function_col;
 end
 
 basis_values = ones(m, 1);

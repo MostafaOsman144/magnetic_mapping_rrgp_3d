@@ -8,6 +8,7 @@ d = length(position);
 
 grad_of_position = eye(d);
 
+grad = [];
 grad = zeros(d, m+d);
 % TODO: Make this snippet of code use pot-basis_function_row directly to
 % avoid ambiguities in debugging the code due to the difference sizes and
@@ -25,8 +26,8 @@ for grad_position = 1 : d
             grad_col = grad_col .* const_term;
         end
     end
-    grad(grad_position, d+1:end) = grad_col';
-
+    grad(:, d+1:end) = grad_col';
+    grad = [grad; grad_col'];
 end
 
-grad(:, 1:d) = grad_of_position;
+grad = [grad_of_position, grad];

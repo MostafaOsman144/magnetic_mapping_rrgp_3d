@@ -15,8 +15,7 @@ d = size(positions, 2);
 
 permutation_index = generateIndexMat(m);
 
-pot_basis_functions = [];
-
+pot_basis_functions = zeros(n, m+d);
 % TODO: Make this snippet of code use pot-basis_function_row directly to
 % avoid ambiguities in debugging the code due to the difference sizes and
 % the many transposes. 
@@ -31,7 +30,7 @@ for i = 1 : n
         basis_function_term = (1/(sqrt(space_upper_boundaries(k)))) * sin(sine_argument);
         pot_basis_function_col(4:end, 1) = pot_basis_function_col(4:end, 1) .* basis_function_term;
    end
-   pot_basis_functions = [pot_basis_functions; pot_basis_function_col'];
+   pot_basis_functions(i, :)= pot_basis_function_col';
 end
 
 basis_values = ones(m, 1);
