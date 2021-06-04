@@ -26,7 +26,7 @@ measurement_noise = 0.1;
 
 space_margin = 10.0; % Defining the margin in the dirichlet boundary conditions.
 
-number_of_basis_functions = 500; % The number of basis functions for the approximation of the gram matrix.
+number_of_basis_functions = 1000; % The number of basis functions for the approximation of the gram matrix.
 
 %% Organizing the data read from the data file. 
 sampling_time = T;
@@ -106,3 +106,28 @@ tic
 [mag_eigenfunctions_test, ~] = calculateMagBasisFunctionsAndValues(positions_test, number_of_basis_functions, boundaries);
 [mean_mag, cov_mag] = batchEstimation(mag_eigenfunctions, mag_spectral_eig_values, mag_eigenfunctions_test, magnetic_measurements_train, measurement_noise);
 toc
+
+%% Plotting the results of the batch estimation against the actual measurements
+figure; hold;
+plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(mean_mag(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in X-direction');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
+figure; hold;
+plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(mean_mag(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in Y-direction');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
+figure; hold;
+plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(mean_mag(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in Z-direction');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
