@@ -32,14 +32,30 @@ number_of_basis_functions = 500; % The number of basis functions for the approxi
 sampling_time = T;
 magnetic_measurements = u(7:end, :);
 positions = p_opti;
-orientations = q_opti;
+orientations_quat = q_opti;
 gravity = g;
 
 positions = positions(:, 1 : downscale : end);
-orientations = orientations(:, 1 : downscale : end);
+orientations_quat = orientations_quat(:, 1 : downscale : end);
+orientation_mat = quat2rotm(orientations_quat');
 number_of_measurements = size(positions, 2);
 magnetic_measurements = magnetic_measurements(:, 1 : downscale : end);
 sampling_time = sampling_time * downscale;
+
+% Correcting the orientations of magnetic field measurements
+for i = 1 : number_of_measurements
+   magnetic_measurements(:, i) = orientation_mat(:, :, i) * magnetic_measurements(:, i); 
+end
+
+% Normalizing the measurements data (The normalization here is accomplished with an independence assumption)
+means = zeros(size(magnetic_measurements, 1));
+stds = zeros(size(magnetic_measurements, 2));
+
+for i = 1 : length(means)
+   means(i) = mean(magnetic_measurements(i, :)); 
+   stds(i) = std(magnetic_measurements(i, :));
+   magnetic_measurements(i, :) = (magnetic_measurements(i, :) - means(i)) / stds(i);
+end
 
 % Forming the training and test datasets for the batch estimation problem.
 training_size = ceil(number_of_measurements * training_set_factor);
