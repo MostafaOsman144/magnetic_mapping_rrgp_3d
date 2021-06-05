@@ -100,6 +100,9 @@ mag_spectral_eig_values = computeSpectralEigValsMat(mag_eigenvalues, magnitude_s
 mag_approx_gram_mat = mag_eigenfunctions * mag_spectral_eig_values * mag_eigenfunctions';
 toc
 
+%% Optimizing the log marginal likelihood function to get the optimal hyperparamters.
+
+
 %% Batch Estimation for the Magnetic Field 
 fprintf('Time taken for calculating the Posterior of Magnetic field batch estimation problem: \n');
 tic 
