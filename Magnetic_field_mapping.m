@@ -28,6 +28,10 @@ space_margin = 10.0; % Defining the margin in the dirichlet boundary conditions.
 
 number_of_basis_functions = 1000; % The number of basis functions for the approximation of the gram matrix.
 
+% Learning rate for the hyperparameters optimization problem (not working
+% yet).
+learning_rate = 0.1;
+
 %% Organizing the data read from the data file. 
 sampling_time = T;
 magnetic_measurements = u(7:end, :);
@@ -101,7 +105,6 @@ mag_approx_gram_mat = mag_eigenfunctions * mag_spectral_eig_values * mag_eigenfu
 toc
 
 %% Optimizing the log marginal likelihood function to get the optimal hyperparamters.
-% learning_rate = 1e-8;
 % hyperparameters_optimization = HyperparametersOptimization(learning_rate);
 % hyperparameters_optimization.initializeHyperparameters(length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise);
 % hyperparameters_optimization.setEigenfunctionsAndValues(mag_eigenfunctions, mag_eigenvalues, 3);

@@ -121,8 +121,10 @@ classdef HyperparametersOptimization < handle
             while diff > abs(epsilon) || iterations >= max_iter
                 obj.computePartials(spectral_eigenvalues, Z);
                 
+                obj.gradientClipping(10);
+                
                 obj.magnitude_scale_SE = obj.magnitude_scale_SE - obj.learning_rate * obj.dLdsSE;
-                % obj.magnitude_scale_lin = obj.magnitude_scale_lin - obj.learning_rate * obj.dLdsLin;
+                obj.magnitude_scale_lin = obj.magnitude_scale_lin - obj.learning_rate * obj.dLdsLin;
                 obj.length_scale_SE = obj.length_scale_SE - obj.learning_rate * obj.dLdl;
                 % obj.measurement_noise_variance = obj.measurement_noise_variance - obj.learning_rate * obj.dLdsn;
                 
@@ -140,6 +142,34 @@ classdef HyperparametersOptimization < handle
             magnitude_scale_lin = obj.magnitude_scale_lin;
             measurement_noise = obj.measurement_noise_variance;
             
+        end
+        
+        function obj = gradientClipping(obj, threshold)
+            if obj.dLdsSE < -threshold
+                obj.dLdsSE = -threshold;
+            end
+            if obj.dLdl < -threshold
+                obj.dLdl = -threshold;
+            end
+            if obj.dLdsLin < -threshold
+                obj.dLdsLin = -threshold;
+            end
+            if obj.dLdsn < -threshold
+                obj.dLdsn = -threshold;
+            end
+            
+            if obj.dLdsSE > threshold
+                obj.dLdsSE = threshold;
+            end
+            if obj.dLdl > threshold
+                obj.dLdl = threshold;
+            end
+            if obj.dLdsLin > threshold
+                obj.dLdsLin = threshold;
+            end
+            if obj.dLdsn > threshold
+                obj.dLdsn = threshold;
+            end
         end
         
         % See the paper mentioned in the top of the file for more
@@ -165,8 +195,9 @@ classdef HyperparametersOptimization < handle
         
         function dSds = partialEigenPartialMagnitudeScaleSE(obj)
             l_se = obj.length_scale_SE;
+            s_se = obj.magnitude_scale_SE;
             dSds = zeros(obj.m + obj.d, 1);
-            dSds(obj.d+1 : end) = (2*pi*l_se^2)^(3/2) * exp(-(obj.eigenvalues * l_se^2)/2);
+            dSds(obj.d+1 : end) = 2 *s_se * (2*pi*l_se^2)^(3/2) * exp(-(obj.eigenvalues * l_se^2)/2);
             
             dSds = diag(dSds);
             dSds(1:obj.d, 1:obj.d) = zeros(obj.d, obj.d);
@@ -174,7 +205,7 @@ classdef HyperparametersOptimization < handle
         
         function dSdlin = partialEigenPartialMagnitudeScaleLin(obj)
            dSdlin = zeros(obj.m+obj.d, obj.m+obj.d);
-           dSdlin(1:obj.d, 1:obj.d) = eye(obj.d);
+           dSdlin(1:obj.d, 1:obj.d) = obj.magnitude_scale_lin * eye(obj.d);
         end
         
         % See the paper mentioned in the top of the file for more
