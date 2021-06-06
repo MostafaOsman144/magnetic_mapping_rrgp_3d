@@ -20,10 +20,11 @@
 % Sarkka. 
 % Please see this paper for more information on the variables naming. 
 
-classdef HyperparametersOptimization
+classdef HyperparametersOptimization < handle
     properties
         % Defining the loss function and its derivatives
         L = Inf;
+        previous_L = 0;
         dLdl;
         dLdsSE;
         dLdsLin;
@@ -47,17 +48,26 @@ classdef HyperparametersOptimization
         m; % number of eigenfunctions 
         d; % number of dimensions of input (positions)
         
+        % Defining the positions X (n, d)
+        positions;
+        
         % Defining the measurements vector vec_y (3n, 1)
         measurements;
     end
     
     methods 
+        function magnitude_scale = getMagnitudeScale(obj)
+           magnitude_scale = obj.magnitude_scale_SE; 
+        end
+        
         function init_obj = HyperparametersOptimization(learning_rate)
-            init_obj.learning_rate = learning_rate;
-            init_obj.length_scale_SE = length_scale_se;
-            init_obj.magnitude_scale_SE = magnitude_scale_se;
-            init_obj.magnitude_scale_lin = magnitude_scale_lin;
-            init_obj.measurement_noise_variance = measurement_noise_variance;
+            if nargin > 0
+                init_obj.learning_rate = learning_rate;
+            end
+%             init_obj.length_scale_SE = length_scale_se;
+%             init_obj.magnitude_scale_SE = magnitude_scale_se;
+%             init_obj.magnitude_scale_lin = magnitude_scale_lin;
+%             init_obj.measurement_noise_variance = measurement_noise_variance;
             
         end
         
@@ -95,21 +105,59 @@ classdef HyperparametersOptimization
             obj.measurements = reshape(measurements, size(measurements, 1) * size(measurements, 2), 1);
         end
         
+        function obj = setPositionsVector(obj, positions)
+           obj.positions = positions; 
+        end
+        
+        function [length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise] = optimizeHyperparameters(obj, epsilon, max_iter)
+            spectral_eigenvalues = computeSpectralEigValsMat(obj.eigenvalues, obj.magnitude_scale_SE, obj.length_scale_SE, obj.magnitude_scale_lin, obj.d);
+            Z = obj.computeZ(spectral_eigenvalues);
+            obj.computeLossFunction(spectral_eigenvalues, Z);
+            diff = abs(obj.L - obj.previous_L);
+            obj.previous_L = obj.L;
+            iterations = 0;
+            
+            % Gradient Descent Optimization Iterations
+            while diff > abs(epsilon) || iterations >= max_iter
+                obj.computePartials(spectral_eigenvalues, Z);
+                
+                obj.magnitude_scale_SE = obj.magnitude_scale_SE - obj.learning_rate * obj.dLdsSE;
+                % obj.magnitude_scale_lin = obj.magnitude_scale_lin - obj.learning_rate * obj.dLdsLin;
+                obj.length_scale_SE = obj.length_scale_SE - obj.learning_rate * obj.dLdl;
+                % obj.measurement_noise_variance = obj.measurement_noise_variance - obj.learning_rate * obj.dLdsn;
+                
+                spectral_eigenvalues = computeSpectralEigValsMat(obj.eigenvalues, obj.magnitude_scale_SE, obj.length_scale_SE, obj.magnitude_scale_lin, obj.d);
+                Z = obj.computeZ(spectral_eigenvalues);
+                obj.computeLossFunction(spectral_eigenvalues, Z);
+                
+                diff = abs(obj.L - obj.previous_L);
+                obj.previous_L = obj.L;
+                iterations = iterations + 1;
+            end
+            
+            length_scale_SE = obj.length_scale_SE;
+            magnitude_scale_SE = obj.magnitude_scale_SE;
+            magnitude_scale_lin = obj.magnitude_scale_lin;
+            measurement_noise = obj.measurement_noise_variance;
+            
+        end
         
         % See the paper mentioned in the top of the file for more
         % information.
         function obj = computeLossFunction(obj, spectral_eigenvalues, Z)
-            log_Q_tilde = (obj.n - obj.m) * log(obj.measurement_noise_variance) + log(det(Z)) + trace(log(spectral_eigenvalues));
+            log_Q_tilde = (obj.n - obj.m) * log(obj.measurement_noise_variance^2) + log(det(Z)) + trace(logm(spectral_eigenvalues(obj.d:end, obj.d:end)));
             
-            vec_y_Q_tilde_vec_y = (1/obj.measurement_noise_variance) * (obj.measurements' * obj.measurements - obj.measurements' * obj.eigenfunctions / Z * obj.eigenfunctions' * obj.measurements );
+            vec_y_Q_tilde_vec_y = (1/obj.measurement_noise_variance^2) * (obj.measurements' * obj.measurements - obj.measurements' * obj.eigenfunctions / Z * obj.eigenfunctions' * obj.measurements );
             
-            obj.L = 0.5 * log_Q_tilde + 0.5 * vec_y_Q_tilde_vec_y + (obj.n/2)*log(2*pi);
+            obj.L = 0.5 * log_Q_tilde + 0.5 * vec_y_Q_tilde_vec_y + (obj.n/2)*log(2*pi); % Multiplied by -1 to be a minimization problem
         end
         
         function dSdl = partialEigenPartialLengthScaleSE(obj)
             l_se = obj.length_scale_SE;
             s_se = obj.magnitude_scale_SE;
-            dSdl = s_se^2 * (3/2) * (2*pi*l_se^2)^(1/2) * exp(-(obj.eigenvalues * l_se^2)/2) * (4*pi*l_se) + s_se^2 * (2*pi*l_se^2)^(3/2) * exp(-(obj.eigenvalues * l_se^2)/2) * (-obj.eigenvalues * l_se);
+            dSdl = zeros(obj.m + obj.d, 1);
+            dSdl(obj.d+1 : end) = s_se^2 * (3/2) * (2*pi*l_se^2)^(1/2) * (4*pi*l_se) * exp(-(obj.eigenvalues * l_se^2)/2) ...
+                + s_se^2 * (2*pi*l_se^2)^(3/2) * exp(-(obj.eigenvalues * l_se^2)/2) .* (-obj.eigenvalues * l_se);
             
             dSdl = diag(dSdl);
             dSdl(1:obj.d, 1:obj.d) = zeros(obj.d, obj.d);
@@ -117,8 +165,8 @@ classdef HyperparametersOptimization
         
         function dSds = partialEigenPartialMagnitudeScaleSE(obj)
             l_se = obj.length_scale_SE;
-            s_se = obj.magnitude_scale_SE;
-            dSds = 2 * s_se * (2*pi*l_se^2)^(3/2) * exp(-(obj.eigenvalues * l_se^2)/2);
+            dSds = zeros(obj.m + obj.d, 1);
+            dSds(obj.d+1 : end) = (2*pi*l_se^2)^(3/2) * exp(-(obj.eigenvalues * l_se^2)/2);
             
             dSds = diag(dSds);
             dSds(1:obj.d, 1:obj.d) = zeros(obj.d, obj.d);
@@ -126,19 +174,21 @@ classdef HyperparametersOptimization
         
         function dSdlin = partialEigenPartialMagnitudeScaleLin(obj)
            dSdlin = zeros(obj.m+obj.d, obj.m+obj.d);
-           dSdlin(1:obj.d, 1:obj.d) = 2 * obj.magnitude_scale_lin;
+           dSdlin(1:obj.d, 1:obj.d) = eye(obj.d);
         end
         
+        % See the paper mentioned in the top of the file for more
+        % information.
         function obj = computePartials(obj, spectral_eigenvalues, Z)
             dLambda_dl = obj.partialEigenPartialLengthScaleSE();
             dLambda_ds = obj.partialEigenPartialMagnitudeScaleSE();
             dLambda_dlin = obj.partialEigenPartialMagnitudeScaleLin();
             
-            d_logQtilde_dl = trace(spectral_eigenvalues(obj.d+1:end, obj.d+1:end) \ dLambda_dl(obj.d+1:end, obj.d+1:end)) - obj.measurement_noise_variance^2 * trace(Z \ spectral_eigenvalues^2 \ dLambda_dl);
-            d_logQtilde_ds = trace(spectral_eigenvalues(obj.d+1:end, obj.d+1:end) \ dLambda_ds(obj.d+1:end, obj.d+1:end)) - obj.measurement_noise_variance^2 * trace(Z \ spectral_eigenvalues^2 \ dLambda_ds);
-            d_logQtilde_dlin = trace(spectral_eigenvalues(obj.d+1:end, obj.d+1:end) \ dLambda_dlin(obj.d+1:end, obj.d+1:end)) - obj.measurement_noise_variance^2 * trace(Z \ spectral_eigenvalues^2 \ dLambda_dlin);
+            d_logQtilde_dl = trace(spectral_eigenvalues(obj.d+1:end, obj.d+1:end) * eye(obj.m) \ dLambda_dl(obj.d+1:end, obj.d+1:end)) - obj.measurement_noise_variance^2 * trace(Z \ spectral_eigenvalues^2 \ dLambda_dl);
+            d_logQtilde_ds = trace(spectral_eigenvalues(obj.d+1:end, obj.d+1:end) * eye(obj.m) \ dLambda_ds(obj.d+1:end, obj.d+1:end)) - obj.measurement_noise_variance^2 * trace(Z \ spectral_eigenvalues^2 \ dLambda_ds);
+            d_logQtilde_dlin = trace(spectral_eigenvalues(obj.d+1:end, obj.d+1:end) * eye(obj.m) \ dLambda_dlin(obj.d+1:end, obj.d+1:end)) - obj.measurement_noise_variance^2 * trace(Z \ spectral_eigenvalues^2 \ dLambda_dlin);
             
-            d_logQtilde_dn = ((obj.n - obj.m) / obj.measurement_noise_variance^2) + trace(Z \ inv(spectral_eigenvalues));
+            d_logQtilde_dn = ((obj.n - obj.m) / obj.measurement_noise_variance^2) + trace(Z \ spectral_eigenvalues \ eye(size(spectral_eigenvalues, 1)));
             
             d_yQtildey_dl = - obj.measurements' * obj.eigenfunctions / Z * (spectral_eigenvalues^2 \ dLambda_dl) / Z * obj.eigenfunctions' * obj.measurements;
             d_yQtildey_ds = - obj.measurements' * obj.eigenfunctions / Z * (spectral_eigenvalues^2 \ dLambda_ds) / Z * obj.eigenfunctions' * obj.measurements;
@@ -161,7 +211,7 @@ classdef HyperparametersOptimization
         % See the paper mentioned in the top of the file for more
         % information.
         function Z = computeZ(obj, spectral_eigvalues)
-            Z = obj.measurement_noise_variance * eye(obj.m) / spectral_eigvalues + obj.eigenfunctions' * obj.eigenfunctions; 
+            Z = obj.measurement_noise_variance * eye(obj.m+obj.d) / spectral_eigvalues + obj.eigenfunctions' * obj.eigenfunctions; 
         end
     end
 end

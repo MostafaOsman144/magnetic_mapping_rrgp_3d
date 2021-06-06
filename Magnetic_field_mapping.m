@@ -101,7 +101,13 @@ mag_approx_gram_mat = mag_eigenfunctions * mag_spectral_eig_values * mag_eigenfu
 toc
 
 %% Optimizing the log marginal likelihood function to get the optimal hyperparamters.
-
+% learning_rate = 1e-8;
+% hyperparameters_optimization = HyperparametersOptimization(learning_rate);
+% hyperparameters_optimization.initializeHyperparameters(length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise);
+% hyperparameters_optimization.setEigenfunctionsAndValues(mag_eigenfunctions, mag_eigenvalues, 3);
+% hyperparameters_optimization.setMeasurementsVector(magnetic_measurements_train);
+% hyperparameters_optimization.setPositionsVector(positions_train);
+% [length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise] = hyperparameters_optimization.optimizeHyperparameters(0.001, 1000);
 
 %% Batch Estimation for the Magnetic Field 
 fprintf('Time taken for calculating the Posterior of Magnetic field batch estimation problem: \n');
