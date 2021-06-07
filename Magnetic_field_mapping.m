@@ -15,6 +15,8 @@ clear; close all; clc;
 load('measurements_aligned_simple_trajectory.mat'); % Simple scenario measurements
 % load('measurements_aligned_complicated_trajectory.mat'); % More complex scenario measurements
 
+dimensions = 3;
+
 downscale = 2; % Downsampling of the data for reducing running time and avoiding RAM overflow.
 training_set_factor = 70/100; % Percentage for dividing the dataset into test and training datasets for the batch estimation problem.
 
@@ -92,7 +94,7 @@ toc
 fprintf('Time taken for calculating the Pot approximation: \n');
 tic
 [pot_eigenfunctions, pot_eigenvalues] = calculatePotBasisFunctionsAndValues(positions_train, number_of_basis_functions, boundaries);
-pot_spectral_eig_values = computeSpectralEigValsMat(pot_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, 3);
+pot_spectral_eig_values = computeSpectralEigValsMat(pot_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
 pot_approx_gram_mat = pot_eigenfunctions * pot_spectral_eig_values * pot_eigenfunctions';
 toc
 
@@ -100,7 +102,7 @@ toc
 fprintf('Time taken for calculating the Mag approximation: \n');
 tic
 [mag_eigenfunctions, mag_eigenvalues] = calculateMagBasisFunctionsAndValues(positions_train, number_of_basis_functions, boundaries);
-mag_spectral_eig_values = computeSpectralEigValsMat(mag_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, 3);
+mag_spectral_eig_values = computeSpectralEigValsMat(mag_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
 mag_approx_gram_mat = mag_eigenfunctions * mag_spectral_eig_values * mag_eigenfunctions';
 toc
 
@@ -112,7 +114,7 @@ toc
 % hyperparameters_optimization.setPositionsVector(positions_train);
 % [length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise] = hyperparameters_optimization.optimizeHyperparameters(0.001, 1000);
 
-%% Batch Estimation for the Magnetic Field 
+%% Batch Estimation for the Magnetic Field using GP
 fprintf('Time taken for calculating the Posterior of Magnetic field batch estimation problem: \n');
 tic 
 [mag_eigenfunctions_test, ~] = calculateMagBasisFunctionsAndValues(positions_test, number_of_basis_functions, boundaries);
@@ -143,3 +145,28 @@ title('Plotting Magnetic field in Z-direction');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
+
+%% Sequential Estimation for Magnetic Field using GP
+% For explanation of the variables names, please check the paper mentioned
+% in the beginning of the file.
+% This implementationc an be conisdered as a recursive least squares
+% estimation of the magnetic field. 
+% It is also completely equivalent to the update steps fo the Kalman
+% filter.
+sigma = mag_spectral_eig_values;
+mu = zeros(number_of_basis_functions + dimensions, 1);
+
+for i = 1 : training_size
+   [current_eigenfunctions, current_eigenvalues] = calculateMagBasisFunctionsAndValues(positions_train(:, i), number_of_basis_functions, boundaries);
+   S = current_eigenfunctions *  sigma * current_eigenfunctions' + measurement_noise^2 * eye(3);
+   K = sigma * current_eigenfunctions' / S;
+   mu = mu + K * (magnetic_measurements_train(:, i) - current_eigenfunctions * mu);
+   sigma = sigma - K * S * K';   
+end
+
+% predictions = zeros(dimensions, test_size);
+% for i = 1 : test_size
+%     [current_eigenfunctions, current_eigenvalues] = calculateMagBasisFunctionsAndValues(positions_test(:, i), number_of_basis_functions, boundaries);
+%     predictions(:, i) = current_eigenfunctions * mu;
+%     predictions_cov = current_eigenfunctions * sigma * current_eigenfunctions';
+% end
