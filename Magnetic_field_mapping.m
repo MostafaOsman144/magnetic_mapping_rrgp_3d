@@ -26,9 +26,9 @@ length_scale_SE = 0.3;
 magnitude_scale_lin = 1;
 measurement_noise = 0.1;
 
-space_margin = 10.0; % Defining the margin in the dirichlet boundary conditions.
+space_margin = 0.5; % Defining the margin in the dirichlet boundary conditions.
 
-number_of_basis_functions = 1000; % The number of basis functions for the approximation of the gram matrix.
+number_of_basis_functions = 2000; % The number of basis functions for the approximation of the gram matrix.
 
 % Learning rate for the hyperparameters optimization problem (not working
 % yet).
@@ -77,9 +77,9 @@ x_u = max(positions(1, :)) + space_margin; % Upper bound of the X-coordinates
 y_u = max(positions(2, :)) + space_margin; % Upper bound of the Y-coordinates
 z_u = max(positions(3, :)) + space_margin; % Upper bound of the Z-coordinates
 
-x_l = abs(min(positions(1, :))) + space_margin; % Lower bound of the X-coordinates
-y_l = abs(min(positions(2, :))) + space_margin; % Lower bound of the Y-coordinates
-z_l = abs(min(positions(3, :))) + space_margin; % Lower bound of the Z-coordinates
+x_l = abs(min(positions(1, :))) + space_margin; % Lower bound of the X-coordinates (notice the abs operator)
+y_l = abs(min(positions(2, :))) + space_margin; % Lower bound of the Y-coordinates (notice the abs operator)
+z_l = abs(min(positions(3, :))) + space_margin; % Lower bound of the Z-coordinates (notice the abs operator)
 
 boundaries = [max(x_u, x_l); 
               max(y_u, y_l); 
@@ -162,11 +162,37 @@ for i = 1 : training_size
    K = sigma * current_eigenfunctions' / S;
    mu = mu + K * (magnetic_measurements_train(:, i) - current_eigenfunctions * mu);
    sigma = sigma - K * S * K';   
+   sigma = 1/2 * (sigma + sigma');
 end
 
-% predictions = zeros(dimensions, test_size);
-% for i = 1 : test_size
-%     [current_eigenfunctions, current_eigenvalues] = calculateMagBasisFunctionsAndValues(positions_test(:, i), number_of_basis_functions, boundaries);
-%     predictions(:, i) = current_eigenfunctions * mu;
-%     predictions_cov = current_eigenfunctions * sigma * current_eigenfunctions';
-% end
+predictions = zeros(dimensions, test_size);
+for i = 1 : test_size
+    [current_eigenfunctions, current_eigenvalues] = calculateMagBasisFunctionsAndValues(positions_test(:, i), number_of_basis_functions, boundaries);
+    predictions(:, i) = current_eigenfunctions * mu;
+    predictions_cov = current_eigenfunctions * sigma * current_eigenfunctions';
+end
+
+%% Plotting the results of the sequential estimation against the actual measurements
+figure; hold;
+plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(predictions(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in X-direction');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
+figure; hold;
+plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(predictions(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in Y-direction');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
+figure; hold;
+plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(predictions(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in Z-direction');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
