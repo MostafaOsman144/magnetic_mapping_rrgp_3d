@@ -6,14 +6,12 @@
 % the specified positions.
 % Notice that here the basis values returned by the function is the
 % eigenvalues sqaured.
-function [pot_basis_functions, basis_values] = calculatePotBasisFunctionsAndValues(positions, number_of_basis_functions, space_upper_boundaries)
+function [pot_basis_functions, basis_values] = calculatePotBasisFunctionsAndValues(positions, number_of_basis_functions, space_upper_boundaries, permutation_index, calculate_values)
 positions = positions';
 
 n = size(positions, 1);
 m = number_of_basis_functions;
 d = size(positions, 2);
-
-permutation_index = generateIndexMat(m);
 
 pot_basis_functions = zeros(n, m+d);
 % TODO: Make this snippet of code use pot-basis_function_row directly to
@@ -34,7 +32,10 @@ for i = 1 : n
 end
 
 basis_values = ones(m, 1);
-for k = 1 : d
-   basis_values =  basis_values .* (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
+if(calculate_values)
+    for k = 1 : d
+        basis_values =  basis_values .* (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
+    end
 end
+
 end

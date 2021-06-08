@@ -6,14 +6,12 @@
 % the specified positions.
 % Notice that here the basis values returned by the function is the
 % eigenvalues sqaured.
-function [mag_basis_functions, basis_values]= calculateMagBasisFunctionsAndValues(positions, number_of_basis_functions, space_upper_boundaries)
+function [mag_basis_functions, basis_values]= calculateMagBasisFunctionsAndValues(positions, number_of_basis_functions, space_upper_boundaries, permutation_index, calculate_values)
 positions = positions';
 
 n = size(positions, 1);
 m = number_of_basis_functions;
 d = size(positions, 2);
-
-permutation_index = generateIndexMat(m);
 
 mag_basis_functions = zeros(3*n, d + m);
 % TODO: Try to vectorize this for loop over n to optimize the computation
@@ -24,7 +22,10 @@ for i = 1 : n
 end
 
 basis_values = ones(m, 1);
-for k = 1 : d
-   basis_values =  basis_values .* (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
+if(calculate_values)
+    for k = 1 : d
+        basis_values =  basis_values .* (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
+    end
 end
+
 end
