@@ -18,7 +18,7 @@ load('measurements_aligned_simple_trajectory.mat'); % Simple scenario measuremen
 dimensions = 3;
 
 downscale = 20; % Downsampling of the data for reducing running time and avoiding RAM overflow.
-training_set_factor = 100/100; % Percentage for dividing the dataset into test and training datasets for the batch estimation problem.
+training_set_factor = 70/100; % Percentage for dividing the dataset into test and training datasets for the batch estimation problem.
 
 % Initializing the GP hyperparameters.
 magnitude_scale_SE = 1;
@@ -26,12 +26,11 @@ length_scale_SE = 0.3;
 magnitude_scale_lin = 1;
 measurement_noise = 0.1;
 
-space_margin = 0.5; % Defining the margin in the dirichlet boundary conditions.
+space_margin = 10.0; % Defining the margin in the dirichlet boundary conditions.
 
 number_of_basis_functions = 2000; % The number of basis functions for the approximation of the gram matrix.
 
-% Learning rate for the hyperparameters optimization problem (not working
-% yet).
+% Learning rate for the hyperparameters optimization problem (not working yet).
 learning_rate = 0.1;
 
 %% Organizing the data read from the data file. 
@@ -136,7 +135,7 @@ toc
 figure; hold;
 plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(mean_mag(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in X-direction');
+title('Plotting Magnetic field in X-direction (Batch)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
@@ -144,7 +143,7 @@ legend('Measurements', 'Estimated');
 figure; hold;
 plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(mean_mag(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in Y-direction');
+title('Plotting Magnetic field in Y-direction (Batch)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
@@ -152,7 +151,7 @@ legend('Measurements', 'Estimated');
 figure; hold;
 plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(mean_mag(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in Z-direction');
+title('Plotting Magnetic field in Z-direction (Batch)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
@@ -193,7 +192,7 @@ toc
 figure; hold;
 plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(predictions(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in X-direction');
+title('Plotting Magnetic field in X-direction (Sequential)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
@@ -201,7 +200,7 @@ legend('Measurements', 'Estimated');
 figure; hold;
 plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(predictions(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in Y-direction');
+title('Plotting Magnetic field in Y-direction (Sequential)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
@@ -209,7 +208,7 @@ legend('Measurements', 'Estimated');
 figure; hold;
 plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(predictions(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in Z-direction');
+title('Plotting Magnetic field in Z-direction (Sequential)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
 legend('Measurements', 'Estimated');
