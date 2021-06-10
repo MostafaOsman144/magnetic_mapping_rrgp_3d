@@ -21,10 +21,10 @@ for i = 1 : n
    mag_basis_functions(i*3 - 2 : i*3, :) = mag_basis_function_col;
 end
 
-basis_values = ones(m, 1);
+basis_values = zeros(m, 1);
 if(calculate_values)
     for k = 1 : d
-        basis_values =  basis_values .* (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
+        basis_values =  basis_values + (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
     end
 end
 
