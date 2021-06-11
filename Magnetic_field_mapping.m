@@ -22,11 +22,11 @@ training_set_factor = 70/100; % Percentage for dividing the dataset into test an
 
 % Initializing the GP hyperparameters.
 magnitude_scale_SE = 1;
-length_scale_SE = 0.3;
+length_scale_SE = 0.1;
 magnitude_scale_lin = 1;
 measurement_noise = 0.1;
 
-space_margin = 10.0; % Defining the margin in the dirichlet boundary conditions.
+space_margin = 0.5; % Defining the margin in the dirichlet boundary conditions.
 
 number_of_basis_functions = 2000; % The number of basis functions for the approximation of the gram matrix.
 
@@ -39,8 +39,6 @@ magnetic_measurements = u(7:end, :);
 positions = p_opti;
 orientations_quat = q_opti;
 gravity = g;
-
-permutation_index = generateIndexMat(number_of_basis_functions); % generating the set of permutations for indexing the eigenfunctions and eigenvalues
 
 positions = positions(:, 1 : downscale : end);
 orientations_quat = orientations_quat(:, 1 : downscale : end);
@@ -100,26 +98,32 @@ fprintf('Calculating the exact gram matrix: \n');
 tic
 exact_gram_matrix = calculateExactGramMatrix(positions_train, positions_train, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
 toc
+
+%% Calculating the eigenvalues for the eigendecomposition problem
+permutation_index = generateIndexMat(number_of_basis_functions); % generating the set of permutations for indexing the eigenfunctions and eigenvalues\
+[eigenvalues, permutation_index] = computeEigValsAndIndices(permutation_index, number_of_basis_functions, boundaries, dimensions);
+spectral_eig_values = computeSpectralEigValsMat(eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
+
 %% Compute the approximated gram matrix for the GP prior using the eigenfunctions of the laplacian operator for the scalar potential
 fprintf('Calculating the Pot approximation: \n');
 tic
-[pot_eigenfunctions, pot_eigenvalues] = calculatePotBasisFunctionsAndValues(positions_train, number_of_basis_functions, boundaries, permutation_index, true);
-pot_spectral_eig_values = computeSpectralEigValsMat(pot_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
-pot_approx_gram_mat = pot_eigenfunctions * pot_spectral_eig_values * pot_eigenfunctions';
+pot_eigenfunctions = calculatePotBasisFunctionsAndValues(positions_train, number_of_basis_functions, boundaries, permutation_index);
+% pot_appot_spectral_eig_values = computeSpectralEigValsMat(pot_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
+prox_gram_mat = pot_eigenfunctions * spectral_eig_values * pot_eigenfunctions';
 toc
 
 %% Compute the approximated gram matrix for the GP prior using the eigenfunctions of the laplacian operator for the Magnetic field
 fprintf('Calculating the Mag approximation: \n');
 tic
-[mag_eigenfunctions, mag_eigenvalues] = calculateMagBasisFunctionsAndValues(positions_train, number_of_basis_functions, boundaries, permutation_index, true);
-mag_spectral_eig_values = computeSpectralEigValsMat(mag_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
-mag_approx_gram_mat = mag_eigenfunctions * mag_spectral_eig_values * mag_eigenfunctions';
+mag_eigenfunctions = calculateMagBasisFunctionsAndValues(positions_train, number_of_basis_functions, boundaries, permutation_index);
+% mag_spectral_eig_values = computeSpectralEigValsMat(mag_eigenvalues, magnitude_scale_SE, length_scale_SE, magnitude_scale_lin, dimensions);
+mag_approx_gram_mat = mag_eigenfunctions * spectral_eig_values * mag_eigenfunctions';
 toc
 
 %% Optimizing the log marginal likelihood function to get the optimal hyperparamters. (Not working properly yet)
 % hyperparameters_optimization = HyperparametersOptimization(learning_rate);
 % hyperparameters_optimization.initializeHyperparameters(length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise);
-% hyperparameters_optimization.setEigenfunctionsAndValues(mag_eigenfunctions, mag_eigenvalues, 3);
+% hyperparameters_optimization.setEigenfunctionsAndValues(mag_eigenfunctions, eigenvalues, 3);
 % hyperparameters_optimization.setMeasurementsVector(magnetic_measurements_train);
 % hyperparameters_optimization.setPositionsVector(positions_train);
 % [length_scale_SE, magnitude_scale_SE, magnitude_scale_lin, measurement_noise] = hyperparameters_optimization.optimizeHyperparameters(0.001, 1000);
@@ -127,8 +131,8 @@ toc
 %% Batch Estimation for the Magnetic Field using GP
 fprintf('Calculating the Posterior of Magnetic field batch estimation problem: \n');
 tic 
-[mag_eigenfunctions_test, ~] = calculateMagBasisFunctionsAndValues(positions_test, number_of_basis_functions, boundaries, permutation_index, false);
-[mean_mag, cov_mag] = batchEstimation(mag_eigenfunctions, mag_spectral_eig_values, mag_eigenfunctions_test, magnetic_measurements_train, measurement_noise);
+mag_eigenfunctions_test = calculateMagBasisFunctionsAndValues(positions_test, number_of_basis_functions, boundaries, permutation_index);
+[mean_mag, cov_mag] = batchEstimation(mag_eigenfunctions, spectral_eig_values, mag_eigenfunctions_test, magnetic_measurements_train, measurement_noise);
 toc
 
 %% Plotting the results of the batch estimation against the actual measurements
@@ -163,13 +167,13 @@ legend('Measurements', 'Estimated');
 % estimation of the magnetic field. 
 % It is also completely equivalent to the update steps fo the Kalman
 % filter.
-sigma = mag_spectral_eig_values;
+sigma = spectral_eig_values;
 mu = zeros(number_of_basis_functions + dimensions, 1);
 
 fprintf('Executing the Sequential Estimation \n');
 tic
 for i = 1 : training_size
-   [current_eigenfunctions, ~] = calculateMagBasisFunctionsAndValues(positions_train(:, i), number_of_basis_functions, boundaries, permutation_index, false);
+   current_eigenfunctions = calculateMagBasisFunctionsAndValues(positions_train(:, i), number_of_basis_functions, boundaries, permutation_index);
    S = current_eigenfunctions *  sigma * current_eigenfunctions' + measurement_noise^2 * eye(3);
    K = sigma * current_eigenfunctions' / S;
    mu = mu + K * (magnetic_measurements_train(:, i) - current_eigenfunctions * mu);
@@ -182,7 +186,7 @@ fprintf('Estimating the Magnetic field using the estimated mean and covariance \
 tic
 predictions = zeros(dimensions, test_size);
 for i = 1 : test_size
-    [current_eigenfunctions, ~] = calculateMagBasisFunctionsAndValues(positions_test(:, i), number_of_basis_functions, boundaries, permutation_index, false);
+    current_eigenfunctions= calculateMagBasisFunctionsAndValues(positions_test(:, i), number_of_basis_functions, boundaries, permutation_index);
     predictions(:, i) = current_eigenfunctions * mu;
     predictions_cov = current_eigenfunctions * sigma * current_eigenfunctions';
 end

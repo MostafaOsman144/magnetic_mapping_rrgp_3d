@@ -6,7 +6,7 @@
 % the specified positions.
 % Notice that here the basis values returned by the function is the
 % eigenvalues sqaured.
-function [pot_basis_functions, basis_values] = calculatePotBasisFunctionsAndValues(positions, number_of_basis_functions, space_upper_boundaries, permutation_index, calculate_values)
+function [pot_basis_functions] = calculatePotBasisFunctionsAndValues(positions, number_of_basis_functions, space_upper_boundaries, permutation_index)
 positions = positions';
 
 n = size(positions, 1);
@@ -31,11 +31,11 @@ for i = 1 : n
    pot_basis_functions(i, :)= pot_basis_function_col';
 end
 
-basis_values = zeros(m, 1);
-if(calculate_values)
-    for k = 1 : d
-        basis_values =  basis_values + (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
-    end
-end
+% basis_values = zeros(m, 1);
+% if(calculate_values)
+%     for k = 1 : d
+%         basis_values =  basis_values + (pi .* permutation_index(:, k) / (2 * space_upper_boundaries(k))).^2;
+%     end
+% end
 
 end

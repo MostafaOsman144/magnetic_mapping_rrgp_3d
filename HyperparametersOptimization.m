@@ -242,7 +242,7 @@ classdef HyperparametersOptimization < handle
         % See the paper mentioned in the top of the file for more
         % information.
         function Z = computeZ(obj, spectral_eigvalues)
-            Z = obj.measurement_noise_variance * eye(obj.m+obj.d) / spectral_eigvalues + obj.eigenfunctions' * obj.eigenfunctions; 
+            Z = obj.measurement_noise_variance^2 * eye(obj.m+obj.d) / spectral_eigvalues + obj.eigenfunctions' * obj.eigenfunctions; 
         end
     end
 end
