@@ -17,7 +17,7 @@ load('measurements_aligned_simple_trajectory.mat'); % Simple scenario measuremen
 
 dimensions = 3;
 
-downscale = 20; % Downsampling of the data for reducing running time and avoiding RAM overflow.
+downscale = 10; % Downsampling of the data for reducing running time and avoiding RAM overflow.
 training_set_factor = 70/100; % Percentage for dividing the dataset into test and training datasets for the batch estimation problem.
 
 % Initializing the GP hyperparameters.
@@ -126,35 +126,6 @@ exact_cov_curl = exact_gram_matrix_curl_test_test - exact_gram_matrix_curl_test_
 exact_mean_curl = reshape(exact_mean_curl, 3, size(positions_test, 2));
 toc
 
-%% Plotting the results of the batch estimation against the actual measurements
-figure; hold;
-plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
-plot(exact_mean(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-plot(exact_mean_curl(1, :));
-title('Plotting Magnetic field in X-direction (Batch Exact)');
-xlabel('Timesteps');
-ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated (Separate Modeling)', 'Estimated (Curl-Free)');
-
-figure; hold;
-plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
-plot(exact_mean(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-plot(exact_mean_curl(3, :));
-title('Plotting Magnetic field in Y-direction (Batch Exact)');
-xlabel('Timesteps');
-ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated (Separate Modeling)', 'Estimated (Curl-Free)');
-
-figure; hold;
-plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
-plot(exact_mean(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-plot(exact_mean_curl(3, :));
-title('Plotting Magnetic field in Z-direction (Batch Exact)');
-xlabel('Timesteps');
-ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated (Separate Modeling)', 'Estimated (Curl-Free)');
-
-
 %% Calculating the eigenvalues for the eigendecomposition problem
 permutation_index = generateIndexMat(number_of_basis_functions); % generating the set of permutations for indexing the eigenfunctions and eigenvalues\
 [eigenvalues, permutation_index] = computeEigValsAndIndices(permutation_index, number_of_basis_functions, boundaries, dimensions);
@@ -191,31 +162,6 @@ mag_eigenfunctions_test = calculateMagBasisFunctionsAndValues(positions_test, nu
 [mean_mag, cov_mag] = batchEstimation(mag_eigenfunctions, spectral_eig_values, mag_eigenfunctions_test, magnetic_measurements_train, measurement_noise);
 toc
 
-%% Plotting the results of the batch estimation against the actual measurements
-figure; hold;
-plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
-plot(mean_mag(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in X-direction (Batch)');
-xlabel('Timesteps');
-ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
-
-figure; hold;
-plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
-plot(mean_mag(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in Y-direction (Batch)');
-xlabel('Timesteps');
-ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
-
-figure; hold;
-plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
-plot(mean_mag(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in Z-direction (Batch)');
-xlabel('Timesteps');
-ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
-
 %% Sequential Estimation for Magnetic Field using GP
 % For explanation of the variables names, please check the paper mentioned
 % in the beginning of the file.
@@ -251,24 +197,39 @@ toc
 %% Plotting the results of the sequential estimation against the actual measurements
 figure; hold;
 plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(exact_mean(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+plot(exact_mean_curl(1, :));
+plot(mean_mag(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
 plot(predictions(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
-title('Plotting Magnetic field in X-direction (Sequential)');
+title('Plotting Magnetic field in X-direction');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
+legend('Measurements', 'Exact GP Separated', 'Exact GP Curl free', 'RR Batch', 'RR Seq.', 'Location', 'Best');
+saveas(gcf, './Figures/X_direction_estimation.bmp');
+saveas(gcf, './Figures/X_direction_estimation.fig');
 
 figure; hold;
 plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(exact_mean(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+plot(exact_mean_curl(2, :));
+plot(mean_mag(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
 plot(predictions(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
 title('Plotting Magnetic field in Y-direction (Sequential)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
+legend('Measurements', 'Exact GP Separated', 'Exact GP Curl free', 'RR Batch', 'RR Seq.', 'Location', 'Best');
+saveas(gcf, './Figures/Y_direction_estimation.bmp');
+saveas(gcf, './Figures/Y_direction_estimation.fig');
 
 figure; hold;
 plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(exact_mean(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+plot(exact_mean_curl(3, :));
+plot(mean_mag(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
 plot(predictions(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
 title('Plotting Magnetic field in Z-direction (Sequential)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
+legend('Measurements', 'Exact GP Separated', 'Exact GP Curl free', 'RR Batch', 'RR Seq.', 'Location', 'Best');
+saveas(gcf, './Figures/Z_direction_estimation.bmp');
+saveas(gcf, './Figures/Z_direction_estimation.fig');

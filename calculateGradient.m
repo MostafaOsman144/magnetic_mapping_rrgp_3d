@@ -13,8 +13,8 @@ grad = zeros(d, m+d);
 % avoid ambiguities in debugging the code due to the difference sizes and
 % the many transposes. 
 for grad_position = 1 : d
+    grad_col = ones(m, 1);
     for i = 1 : d
-        grad_col = ones(m, 1);
         if i == grad_position
             argument = pi .* permutation_index(:, i) .* (position(i) + upper_bound(i)) ./ (2*upper_bound(i));
             grad_term = (pi .* permutation_index(:, i) ./ (2 * upper_bound(i)^(3/2))) .* cos(argument);

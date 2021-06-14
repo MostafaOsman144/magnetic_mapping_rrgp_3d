@@ -18,8 +18,6 @@ mag_basis_functions = zeros(d*n, d + m);
 % time.
 for i = 1 : n
    mag_basis_function_col = calculateGradient(permutation_index, positions(i, :)', space_upper_boundaries);
-%    mag_basis_function_col = Nabla_Phi3D(positions(i, :)', number_of_basis_functions, -space_upper_boundaries(1), space_upper_boundaries(1), -space_upper_boundaries(2), ...
-%        space_upper_boundaries(2), -space_upper_boundaries(3), space_upper_boundaries(3), permutation_index);
    mag_basis_functions(i*3 - 2 : i*3, :) = mag_basis_function_col;
 end
 
