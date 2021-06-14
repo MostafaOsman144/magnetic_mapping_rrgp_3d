@@ -22,8 +22,8 @@ training_set_factor = 70/100; % Percentage for dividing the dataset into test an
 
 % Initializing the GP hyperparameters.
 magnitude_scale_SE = 1;
-length_scale_SE = 0.1;
-magnitude_scale_lin = 1;
+length_scale_SE = 0.3;
+magnitude_scale_lin = 10;
 measurement_noise = 0.1;
 
 space_margin = 0.5; % Defining the margin in the dirichlet boundary conditions.
@@ -98,6 +98,41 @@ fprintf('Calculating the exact gram matrix: \n');
 tic
 exact_gram_matrix = calculateExactGramMatrix(positions_train, positions_train, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
 toc
+
+%% Compute the exact posterior for comparison
+fprintf('Calculating the exact regression problem: \n');
+tic
+exact_gram_matrix_test_train = calculateExactGramMatrix(positions_train, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_mean = (exact_gram_matrix_test_train' * ((exact_gram_matrix + measurement_noise^2 * eye(training_size)) \ magnetic_measurements_train'))';
+exact_gram_matrix_test_test = calculateExactGramMatrix(positions_test, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_cov = exact_gram_matrix_test_test - exact_gram_matrix_test_train' * ((exact_gram_matrix + measurement_noise^2 * eye(training_size)) \ exact_gram_matrix_test_train);
+toc 
+
+%% Plotting the results of the batch estimation against the actual measurements
+figure; hold;
+plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(exact_mean(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in X-direction (Batch Exact)');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
+figure; hold;
+plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(exact_mean(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in Y-direction (Batch Exact)');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
+figure; hold;
+plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
+plot(exact_mean(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+title('Plotting Magnetic field in Z-direction (Batch Exact)');
+xlabel('Timesteps');
+ylabel('Magnetic Field Magnitude');
+legend('Measurements', 'Estimated');
+
 
 %% Calculating the eigenvalues for the eigendecomposition problem
 permutation_index = generateIndexMat(number_of_basis_functions); % generating the set of permutations for indexing the eigenfunctions and eigenvalues\
