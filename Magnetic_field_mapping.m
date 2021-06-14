@@ -23,7 +23,7 @@ training_set_factor = 70/100; % Percentage for dividing the dataset into test an
 % Initializing the GP hyperparameters.
 magnitude_scale_SE = 1;
 length_scale_SE = 0.3;
-magnitude_scale_lin = 10;
+magnitude_scale_lin = 1;
 measurement_noise = 0.1;
 
 space_margin = 0.5; % Defining the margin in the dirichlet boundary conditions.
@@ -93,45 +93,66 @@ boundaries = [max(x_u, x_l);
               max(y_u, y_l); 
               max(z_u, z_l)]; % The boundaries of the eigendecomposition problem based on the actual boundaries of the data. 
 
-%% Compute the exact gram matrix for the GP prior
-fprintf('Calculating the exact gram matrix: \n');
+%% Compute the exact gram matrix for the GP prior using Scalar potential prior
+fprintf('Calculating the exact gram matrix using the gradient of potential: \n');
 tic
-exact_gram_matrix = calculateExactGramMatrix(positions_train, positions_train, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_gram_matrix_pot = calculateExactGramMatrixPot(positions_train, positions_train, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
 toc
 
 %% Compute the exact posterior for comparison
 fprintf('Calculating the exact regression problem: \n');
 tic
-exact_gram_matrix_test_train = calculateExactGramMatrix(positions_train, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
-exact_mean = (exact_gram_matrix_test_train' * ((exact_gram_matrix + measurement_noise^2 * eye(training_size)) \ magnetic_measurements_train'))';
-exact_gram_matrix_test_test = calculateExactGramMatrix(positions_test, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
-exact_cov = exact_gram_matrix_test_test - exact_gram_matrix_test_train' * ((exact_gram_matrix + measurement_noise^2 * eye(training_size)) \ exact_gram_matrix_test_train);
+exact_gram_matrix_pot_test_train = calculateExactGramMatrixPot(positions_train, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_mean = (exact_gram_matrix_pot_test_train' * ((exact_gram_matrix_pot + measurement_noise^2 * eye(training_size)) \ magnetic_measurements_train'))';
+exact_gram_matrix_pot_test_test = calculateExactGramMatrixPot(positions_test, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_cov = exact_gram_matrix_pot_test_test - exact_gram_matrix_pot_test_train' * ((exact_gram_matrix_pot + measurement_noise^2 * eye(training_size)) \ exact_gram_matrix_pot_test_train);
 toc 
+
+%% Compute the exact gram matrix for the GP prior using the Curl free kernel
+fprintf('Calculating the exact gram matrix using the curl free kernel: \n');
+tic 
+exact_gram_matrix_curl = calculateExactGramMatrixCurl(positions_train, positions_train, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+toc
+
+%% Compute the exact posterior using Curl free kernel for comparison
+fprintf('Calculating the exact regression problem using Curl free kernel: \n');
+tic
+vectorized_training = reshape(magnetic_measurements_train, size(magnetic_measurements_train, 1) * size(magnetic_measurements_train, 2), 1);
+exact_gram_matrix_curl_test_train = calculateExactGramMatrixCurl(positions_train, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_mean_curl = exact_gram_matrix_curl_test_train' * ((exact_gram_matrix_curl + measurement_noise^2 * eye(3*training_size)) \ vectorized_training);
+exact_gram_matrix_curl_test_test = calculateExactGramMatrixCurl(positions_test, positions_test, magnitude_scale_lin, magnitude_scale_SE, length_scale_SE);
+exact_cov_curl = exact_gram_matrix_curl_test_test - exact_gram_matrix_curl_test_train' * ((exact_gram_matrix_curl + measurement_noise^2 * eye(3*training_size)) \ exact_gram_matrix_curl_test_train);
+
+exact_mean_curl = reshape(exact_mean_curl, 3, size(positions_test, 2));
+toc
 
 %% Plotting the results of the batch estimation against the actual measurements
 figure; hold;
 plot(magnetic_measurements_test(1, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(exact_mean(1, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+plot(exact_mean_curl(1, :));
 title('Plotting Magnetic field in X-direction (Batch Exact)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
+legend('Measurements', 'Estimated (Separate Modeling)', 'Estimated (Curl-Free)');
 
 figure; hold;
 plot(magnetic_measurements_test(2, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(exact_mean(2, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+plot(exact_mean_curl(3, :));
 title('Plotting Magnetic field in Y-direction (Batch Exact)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
+legend('Measurements', 'Estimated (Separate Modeling)', 'Estimated (Curl-Free)');
 
 figure; hold;
 plot(magnetic_measurements_test(3, :)); % Plotting the actual measurements of the magnetic field in the X direction
 plot(exact_mean(3, :)); % Plotting the estimated measurements of the magnetic field in the X direction
+plot(exact_mean_curl(3, :));
 title('Plotting Magnetic field in Z-direction (Batch Exact)');
 xlabel('Timesteps');
 ylabel('Magnetic Field Magnitude');
-legend('Measurements', 'Estimated');
+legend('Measurements', 'Estimated (Separate Modeling)', 'Estimated (Curl-Free)');
 
 
 %% Calculating the eigenvalues for the eigendecomposition problem

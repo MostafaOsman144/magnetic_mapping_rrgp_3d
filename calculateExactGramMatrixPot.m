@@ -2,7 +2,7 @@
 % X: The first sampling positions of the distribution, size (d, n)
 % X_dash: The second sampling positions of the distribution, size (d, m)
 
-function gramMatrix = calculateExactGramMatrix(X, X_dash, magnitude_scale_lin, magnitude_scale_SE, length_scale)
+function gramMatrix = calculateExactGramMatrixPot(X, X_dash, magnitude_scale_lin, magnitude_scale_SE, length_scale)
 
 d = size(X, 1);
 n = size(X, 2);

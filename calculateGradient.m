@@ -9,7 +9,7 @@ d = length(position);
 grad_of_position = eye(d);
 
 grad = zeros(d, m+d);
-% TODO: Make this snippet of code use pot-basis_function_row directly to
+% TODO: Make this snippet of code use mag_basis_function_row directly to
 % avoid ambiguities in debugging the code due to the difference sizes and
 % the many transposes. 
 for grad_position = 1 : d
@@ -30,3 +30,5 @@ for grad_position = 1 : d
 end
 
 grad(:, 1:d) = grad_of_position;
+
+end
