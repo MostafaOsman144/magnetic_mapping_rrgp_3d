@@ -31,7 +31,7 @@ space_margin = 0.5; % Defining the margin in the dirichlet boundary conditions.
 number_of_basis_functions = 2000; % The number of basis functions for the approximation of the gram matrix.
 
 % Learning rate for the hyperparameters optimization problem (not working yet).
-learning_rate = 0.1;
+learning_rate = 0.01;
 
 %% Organizing the data read from the data file. 
 sampling_time = T;
