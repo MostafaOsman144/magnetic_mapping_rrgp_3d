@@ -15,6 +15,6 @@ result_SE = magnitude_scale^2 * exp(-euclidean_norm_squared / (2 * length_scale^
 
 result_curl = zeros(3, size(measurements_positions, 2)*3 );
 for i = 1 : size(measurements_positions, 2)
-    result_curl(:, i*3-2 : i*3) = result_SE(i) * (eye(3) - difference(:, i) * difference(:, i)');
+    result_curl(:, i*3-2 : i*3) = result_SE(i) * (eye(3) - (difference(:, i)/length_scale) * (difference(:, i)/length_scale)');
 end
 end
